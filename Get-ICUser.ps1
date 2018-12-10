@@ -18,7 +18,8 @@ function Get-ICUser() # {{{2
   [CmdletBinding()]
   Param(
     [Parameter(Mandatory=$true)]  [Alias("Session", "Id")] [ININ.ICSession] $ICSession,
-    [Parameter(Mandatory=$true)] [Alias("User")] [string] $ICUser
+    [Parameter(Mandatory=$true)] [Alias("User")] [string] $ICUser,
+    [Parameter(Mandatory=$false)] [Alias("Query")] [string] $ICQuery
   )
 
   if (! $PSBoundParameters.ContainsKey('ICUser'))
@@ -31,10 +32,14 @@ function Get-ICUser() # {{{2
     "ININ-ICWS-CSRF-Token" = $ICSession.token;
   }
 
+  if ($ICQuery -ne "")
+  {
+    $query = "/?select=*"
+  }
   $response = '';
 
   try {
-      $response = Invoke-RestMethod -Uri "$($ICsession.baseURL)/$($ICSession.id)/configuration/users/$ICUser" -Method Get -Headers $headers -WebSession $ICSession.webSession -ErrorAction Stop
+      $response = Invoke-RestMethod -Uri "$($ICsession.baseURL)/$($ICSession.id)/configuration/users/$ICUser$Query" -Method Get -Headers $headers -WebSession $ICSession.webSession -ErrorAction Stop
   }
   catch [System.Net.WebException] {
     # If user not found, ignore the exception
