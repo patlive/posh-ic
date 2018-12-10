@@ -15,14 +15,21 @@ function Get-ICWorkgroups() # {{{2
 #> # }}}3
   [CmdletBinding()]
   Param(
-    [Parameter(Mandatory=$true)]  [Alias("Session", "Id")] [ININ.ICSession] $ICSession
+    [Parameter(Mandatory=$true)]  [Alias("Session", "Id")] [ININ.ICSession] $ICSession,
+    [Parameter(Mandatory=$false)] [Alias("Query")] [string] $ICQuery
   )
 
   $headers = @{
     "Accept-Language"      = $ICSession.language;
     "ININ-ICWS-CSRF-Token" = $ICSession.token;
   }
-  $response = Invoke-RestMethod -Uri "$($ICsession.baseURL)/$($ICSession.id)/configuration/workgroups" -Method Get -Headers $headers -WebSession $ICSession.webSession -ErrorAction Stop
+
+  if ($ICQuery -ne "")
+  {
+    $query = "/?select=$ICQuery"
+  }
+  
+  $response = Invoke-RestMethod -Uri "$($ICsession.baseURL)/$($ICSession.id)/configuration/workgroups$Query" -Method Get -Headers $headers -WebSession $ICSession.webSession -ErrorAction Stop
   Write-Output $response | Format-Table
   [PSCustomObject] $response
 } # }}}2

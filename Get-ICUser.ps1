@@ -34,8 +34,9 @@ function Get-ICUser() # {{{2
 
   if ($ICQuery -ne "")
   {
-    $query = "/?select=*"
+    $query = "/?select=$ICQuery" 
   }
+
   $response = '';
 
   try {

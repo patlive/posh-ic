@@ -18,7 +18,8 @@ function Get-ICWorkgroup() # {{{2
   [CmdletBinding()]
   Param(
     [Parameter(Mandatory=$true)]  [Alias("Session", "Id")] [ININ.ICSession] $ICSession,
-    [Parameter(Mandatory=$true)] [Alias("Workgroup")] [string] $ICWorkgroup
+    [Parameter(Mandatory=$true)] [Alias("Workgroup")] [string] $ICWorkgroup,
+    [Parameter(Mandatory=$false)] [Alias("Query")] [string] $ICQuery
   )
 
   $headers = @{
@@ -26,10 +27,15 @@ function Get-ICWorkgroup() # {{{2
     "ININ-ICWS-CSRF-Token" = $ICSession.token;
   }
 
+  if ($ICQuery -ne "")
+  {
+    $query = "/?select=$ICQuery"
+  }
+
   $response = '';
 
   try {
-      $response = Invoke-RestMethod -Uri "$($ICsession.baseURL)/$($ICSession.id)/configuration/workgroups/$ICWorkgroup" -Method Get -Headers $headers -WebSession $ICSession.webSession -ErrorAction Stop
+      $response = Invoke-RestMethod -Uri "$($ICsession.baseURL)/$($ICSession.id)/configuration/workgroups/$ICWorkgroup$Query" -Method Get -Headers $headers -WebSession $ICSession.webSession -ErrorAction Stop
   }
   catch [System.Net.WebException] {
     # If user not found, ignore the exception
