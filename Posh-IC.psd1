@@ -101,7 +101,9 @@ FunctionsToExport = @(
     'Get-ICLicenseAllocations',
     'Import-AttProfile',
     'Export-AttProfile',
-    'Set-ICLicense'
+    'Set-ICLicense',
+    'Get-ICAction',
+    'New-ICAction'
   )
 
 # Cmdlets to export from this module
