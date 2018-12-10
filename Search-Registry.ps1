@@ -1,5 +1,6 @@
 # Search-Registry.ps1
 # Written by Bill Stewart (bstewart@iname.com)
+# Modified by Dave May (dave.may@patlive.com)
 
 #requires -version 2
 
@@ -34,6 +35,9 @@ Matches registry value data. You must specify at least one of -MatchKey, -MatchV
 
 .PARAMETER MaximumMatches
 Specifies the maximum number of results per computer searched. 0 means "return the maximum number of possible matches." The default is 0. This parameter is useful when searching the registry on remote computers in order to minimize unnecessary network traffic.
+
+.PARAMETER NoDates
+Ignore CIC datestamp values (value name is snCreated or snModified).  This is useful for comparing CIC servers which have the same configuration, but were not updated at the same time.
 
 .PARAMETER ComputerName
 Searches the registry on the specified computer. This parameter supports piped input.
@@ -73,6 +77,7 @@ param(
     [Switch] $MatchData,
     [UInt32] $MaximumMatches=0,
   [parameter(Mandatory=$FALSE)] [Switch] $ExactMatch,
+  [parameter(Mandatory=$FALSE)] [Switch] $NoDates,
   [parameter(ValueFromPipeline=$TRUE)]
     [String[]] $ComputerName=$ENV:COMPUTERNAME
 )
@@ -96,6 +101,14 @@ begin {
 
   # Interpret zero as "maximum possible number of matches"
   if ($MaximumMatches -eq 0) { $MaximumMatches = [UInt32]::MaxValue }
+
+  # Setup NoDates array
+  $noDatesArray=$(
+      "snCreated"
+      ,"snModified"
+      ,"Date Created"
+      ,"Date Last Modified"
+    )
 
   # These two hash tables speed up lookup of key names and hive types
   $HiveNameToHive = @{
@@ -150,24 +163,26 @@ begin {
     if ($MatchValue -or $MatchData) {
       if ($matchCount.Value -lt $MaximumMatches) {
         foreach ($valueName in $subKey.GetValueNames()) {
-          $valueData = $subKey.GetValue($valueName)
-          if ($ExactMatch) {
-            if (($MatchValue -and ($valueName -contains $Pattern)) -or ($MatchData -and ($valueData -contains $Pattern))) {
-            "" | select-object `
-                @{N="ComputerName"; E={$computerName}},
-                @{N="Key"; E={"$HiveName\$keyPath"}},
-                @{N="Value"; E={$valueName}},
-                @{N="Data"; E={$valueData}}
-            $matchCount.Value++
-            }
-          } else {
-            if (($MatchValue -and ($valueName -match $Pattern)) -or ($MatchData -and ($valueData -match $Pattern))) {
-            "" | select-object `
-                @{N="ComputerName"; E={$computerName}},
-                @{N="Key"; E={"$HiveName\$keyPath"}},
-                @{N="Value"; E={$valueName}},
-                @{N="Data"; E={$valueData}}
-            $matchCount.Value++
+          if ($NoDates -and ($valueName -notin $noDatesArray)) {
+            $valueData = $subKey.GetValue($valueName)
+            if ($ExactMatch) {
+              if (($MatchValue -and ($valueName -contains $Pattern)) -or ($MatchData -and ($valueData -contains $Pattern))) {
+                "" | select-object `
+                    @{N="ComputerName"; E={$computerName}},
+                    @{N="Key"; E={"$HiveName\$keyPath"}},
+                    @{N="Value"; E={$valueName}},
+                    @{N="Data"; E={$valueData}}
+                $matchCount.Value++
+              }
+            } else {
+              if (($MatchValue -and ($valueName -match $Pattern)) -or ($MatchData -and ($valueData -match $Pattern))) {
+                "" | select-object `
+                    @{N="ComputerName"; E={$computerName}},
+                    @{N="Key"; E={"$HiveName\$keyPath"}},
+                    @{N="Value"; E={$valueName}},
+                    @{N="Data"; E={$valueData}}
+                $matchCount.Value++
+              }
             }
           }
           if ($matchCount.Value -eq $MaximumMatches) { break }
