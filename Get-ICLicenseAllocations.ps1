@@ -15,7 +15,8 @@ function Get-ICLicenseAllocations() # {{{2
 #> # }}}3
   [CmdletBinding()]
   Param(
-    [Parameter(Mandatory=$true)]  [Alias("Session", "Id")] [ININ.ICSession] $ICSession
+    [Parameter(Mandatory=$true)]  [Alias("Session", "Id")] [ININ.ICSession] $ICSession,
+    [Parameter(Mandatory=$false)] [Alias("Query")] [string] $ICQuery
   )
 
   $headers = @{
@@ -23,7 +24,12 @@ function Get-ICLicenseAllocations() # {{{2
     "ININ-ICWS-CSRF-Token" = $ICSession.token;
   }
 
-  $response = Invoke-RestMethod -Uri "$($ICsession.baseURL)/$($ICSession.id)/configuration/license-allocations" -Method Get -Headers $headers -WebSession $ICSession.webSession -ErrorAction Stop
+  if ($ICQuery -ne "")
+  {
+    $query = "/?select=$ICQuery" 
+  }
+
+  $response = Invoke-RestMethod -Uri "$($ICsession.baseURL)/$($ICSession.id)/configuration/license-allocations$Query" -Method Get -Headers $headers -WebSession $ICSession.webSession -ErrorAction Stop
   Write-Output $response | Format-Table
   [PSCustomObject] $response
 } # }}}2
